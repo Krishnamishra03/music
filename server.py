@@ -284,8 +284,52 @@ def get_artist_songs(artistId: str = Query(None), name: str = Query(...)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Artist fetch failed: {str(e)}")
 
+def extract_stream_from_cobalt(video_id: str) -> str:
+    instances = [
+        "https://co.wuk.sh",
+        "https://cobalt.moe",
+        "https://cobalt.cr.us.to"
+    ]
+    
+    headers = {
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+    }
+    
+    body = {
+        "url": f"https://www.youtube.com/watch?v={video_id}",
+        "downloadMode": "audio"
+    }
+    
+    import urllib.request, json, ssl
+    context = ssl._create_unverified_context()
+    
+    for api_url in instances:
+        try:
+            req = urllib.request.Request(api_url, headers=headers, data=json.dumps(body).encode())
+            res = urllib.request.urlopen(req, context=context, timeout=5).read().decode()
+            data = json.loads(res)
+            stream_url = data.get("url")
+            if stream_url:
+                print(f"Cobalt success: {api_url}")
+                return stream_url
+        except Exception as e:
+            print(f"Cobalt failed on {api_url}: {e}")
+            
+    return None
+
 @app.get("/api/stream")
 def get_stream_url(videoId: str = Query(..., min_length=1)):
+    # Try Cobalt API first (essential for datacenter/cloud hosting like Hugging Face or Render)
+    try:
+        cobalt_url = extract_stream_from_cobalt(videoId)
+        if cobalt_url:
+            return {"url": cobalt_url}
+    except Exception as cobalt_err:
+        print("Cobalt extraction failed, falling back to local ytdl:", cobalt_err)
+
+    # Fallback to yt-dlp (works on local PC residential connections)
     ydl_opts = {
         'format': 'bestaudio/best',
         'quiet': True,
@@ -294,11 +338,6 @@ def get_stream_url(videoId: str = Query(..., min_length=1)):
         'ignoreerrors': False,
         'logtostderr': False,
         'extract_flat': False,
-        'extractor_args': {
-            'youtube': {
-                'player_client': ['ios', 'web_embedded', 'mweb']
-            }
-        }
     }
     
     try:
