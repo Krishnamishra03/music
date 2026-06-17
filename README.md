@@ -1,3 +1,12 @@
+---
+title: Sarva
+emoji: 🎵
+colorFrom: indigo
+colorTo: pink
+sdk: docker
+app_port: 8000
+---
+
 # Svara Music Backend
 
 FastAPI backend for the Svara music application.
