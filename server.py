@@ -358,6 +358,41 @@ def get_stream_url(videoId: str = Query(..., min_length=1)):
         print("Traceback:", tb)
         raise HTTPException(status_code=500, detail=f"Stream url extraction failed: {str(e)} | Traceback: {tb}")
 
+@app.get("/api/test_cobalt")
+def test_cobalt_endpoint(videoId: str = "eXkHvT--DBU"):
+    instances = [
+        "https://co.wuk.sh",
+        "https://cobalt.moe",
+        "https://cobalt.cr.us.to"
+    ]
+    
+    headers = {
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+    }
+    
+    body = {
+        "url": f"https://www.youtube.com/watch?v={videoId}",
+        "downloadMode": "audio"
+    }
+    
+    import urllib.request, json, ssl
+    context = ssl._create_unverified_context()
+    
+    results = {}
+    for api_url in instances:
+        try:
+            req = urllib.request.Request(api_url, headers=headers, data=json.dumps(body).encode())
+            res = urllib.request.urlopen(req, context=context, timeout=5).read().decode()
+            data = json.loads(res)
+            stream_url = data.get("url")
+            results[api_url] = {"status": "success", "url": stream_url}
+        except Exception as e:
+            results[api_url] = {"status": "failed", "error": str(e)}
+            
+    return results
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("server:app", host="0.0.0.0", port=8000, reload=True)
