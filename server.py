@@ -362,6 +362,7 @@ def get_stream_url(videoId: str = Query(..., min_length=1)):
 @app.get("/api/test_cobalt")
 def test_cobalt_endpoint(videoId: str = "eXkHvT--DBU"):
     instances = [
+        "https://krishna00200-sarva-cobalt.hf.space",
         "https://co.wuk.sh",
         "https://cobalt.moe",
         "https://cobalt.cr.us.to"
