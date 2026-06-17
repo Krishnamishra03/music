@@ -294,6 +294,11 @@ def get_stream_url(videoId: str = Query(..., min_length=1)):
         'ignoreerrors': True,
         'logtostderr': False,
         'extract_flat': False,
+        'extractor_args': {
+            'youtube': {
+                'player_client': ['ios', 'web_embedded', 'mweb']
+            }
+        }
     }
     
     try:
