@@ -291,7 +291,7 @@ def get_stream_url(videoId: str = Query(..., min_length=1)):
         'quiet': True,
         'no_warnings': True,
         'nocheckcertificate': True,
-        'ignoreerrors': True,
+        'ignoreerrors': False,
         'logtostderr': False,
         'extract_flat': False,
         'extractor_args': {
@@ -314,7 +314,10 @@ def get_stream_url(videoId: str = Query(..., min_length=1)):
                 
             return {"url": stream_url}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Stream url extraction failed: {str(e)}")
+        import traceback
+        tb = traceback.format_exc()
+        print("Traceback:", tb)
+        raise HTTPException(status_code=500, detail=f"Stream url extraction failed: {str(e)} | Traceback: {tb}")
 
 if __name__ == "__main__":
     import uvicorn
