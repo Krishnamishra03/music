@@ -395,6 +395,15 @@ def test_cobalt_endpoint(videoId: str = "eXkHvT--DBU"):
             
     return results
 
+@app.get("/api/test_dns")
+def test_dns_endpoint(host: str = "google.com"):
+    import socket
+    try:
+        ip = socket.gethostbyname(host)
+        return {"host": host, "status": "success", "ip": ip}
+    except Exception as e:
+        return {"host": host, "status": "failed", "error": str(e)}
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("server:app", host="0.0.0.0", port=8000, reload=True)
