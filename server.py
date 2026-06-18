@@ -404,6 +404,41 @@ def test_dns_endpoint(host: str = "google.com"):
     except Exception as e:
         return {"host": host, "status": "failed", "error": str(e)}
 
+@app.get("/api/test_piped")
+def test_piped_endpoint(videoId: str = "eXkHvT--DBU"):
+    instances = [
+        "https://pipedapi.lunar.icu",
+        "https://pipedapi.adminforge.de",
+        "https://piped-api.garudalinux.org",
+        "https://pipedapi.ox.xyz",
+        "https://pipedapi.smn.dev",
+        "https://pipedapi.kavin.rocks"
+    ]
+    
+    import urllib.request, json, ssl
+    context = ssl._create_unverified_context()
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+    }
+    
+    results = {}
+    for api_url in instances:
+        stream_url = f"{api_url}/streams/{videoId}"
+        try:
+            req = urllib.request.Request(stream_url, headers=headers)
+            res_content = urllib.request.urlopen(req, context=context, timeout=5).read().decode()
+            data = json.loads(res_content)
+            audio_streams = data.get("audioStreams", [])
+            if audio_streams:
+                results[api_url] = {"status": "success", "url": audio_streams[0].get("url")}
+            else:
+                results[api_url] = {"status": "failed", "error": "No audio streams found"}
+        except Exception as e:
+            results[api_url] = {"status": "failed", "error": str(e)}
+            
+    return results
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("server:app", host="0.0.0.0", port=8000, reload=True)
+
