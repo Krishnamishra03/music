@@ -407,11 +407,10 @@ def test_dns_endpoint(host: str = "google.com"):
 @app.get("/api/test_piped")
 def test_piped_endpoint(videoId: str = "eXkHvT--DBU"):
     instances = [
+        "https://pipedapi-libre.kavin.rocks",
+        "https://pipedapi.drgns.space",
+        "https://pipedapi.leptons.xyz",
         "https://pipedapi.lunar.icu",
-        "https://pipedapi.adminforge.de",
-        "https://piped-api.garudalinux.org",
-        "https://pipedapi.ox.xyz",
-        "https://pipedapi.smn.dev",
         "https://pipedapi.kavin.rocks"
     ]
     
