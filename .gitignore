@@ -6,3 +6,6 @@ __pycache__/
 .venv
 env/
 venv/
+node_modules/
+.env
+.DS_Store
