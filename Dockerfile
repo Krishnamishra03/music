@@ -19,4 +19,4 @@ COPY . .
 EXPOSE 8000
 
 # Command to run application
-CMD ["node", "server.js"]
+CMD ["node", "--dns-result-order=ipv4first", "server.js"]
