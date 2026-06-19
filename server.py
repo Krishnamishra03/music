@@ -17,11 +17,18 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Initialize YTMusic
+# Initialize YTMusic with authentication if available
 try:
-    yt = YTMusic()
+    auth_file = "headers_auth.json"
+    if os.path.exists(auth_file):
+        print(f"Loading authentication headers from {auth_file}...")
+        yt = YTMusic(auth_file)
+    else:
+        print("Starting YTMusic without authentication (default)...")
+        yt = YTMusic()
 except Exception as e:
-    print("Warning: Failed to initialize YTMusic with default settings.", e)
+    print("Warning: Failed to initialize YTMusic.", e)
+    yt = YTMusic()
 
 # Helper to format YTMusic song data into our app's Song model
 def format_song(track):
@@ -340,6 +347,11 @@ def get_stream_url(videoId: str = Query(..., min_length=1)):
         'logtostderr': False,
         'extract_flat': False,
     }
+    
+    cookie_file = "cookies.txt"
+    if os.path.exists(cookie_file):
+        print(f"Using cookies from {cookie_file} for yt-dlp...")
+        ydl_opts['cookiefile'] = cookie_file
     
     try:
         url = f"https://www.youtube.com/watch?v={videoId}"

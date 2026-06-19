@@ -1,4 +1,4 @@
-FROM node:20-slim
+FROM python:3.10-slim
 
 # Install ffmpeg and system dependencies
 RUN apt-get update && apt-get install -y \
@@ -8,9 +8,9 @@ RUN apt-get update && apt-get install -y \
 # Set working directory
 WORKDIR /app
 
-# Copy package.json and install dependencies
-COPY package*.json ./
-RUN npm install --omit=dev
+# Copy requirements and install dependencies
+COPY requirements.txt ./
+RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application files
 COPY . .
@@ -19,4 +19,4 @@ COPY . .
 EXPOSE 8000
 
 # Command to run application
-CMD ["node", "--dns-result-order=ipv4first", "server.js"]
+CMD ["uvicorn", "server:app", "--host", "0.0.0.0", "--port", "8000"]
