@@ -18,6 +18,7 @@ app.use(cors({ origin: '*' }));
 app.use(express.json());
 
 let yt;
+let startupError = null;
 
 // Initialize YouTube.js
 async function initYouTube() {
@@ -30,9 +31,43 @@ async function initYouTube() {
     await cacheTopArtists();
   } catch (err) {
     console.error("Failed to initialize Innertube:", err);
-    process.exit(1);
+    startupError = {
+      message: err.message,
+      stack: err.stack,
+      time: new Date().toISOString()
+    };
   }
 }
+
+// Debug endpoint to check container status and errors
+app.get('/api/debug', (req, res) => {
+  res.json({
+    status: startupError ? "error" : "ok",
+    startupError,
+    env: {
+      nodeVersion: process.version,
+      platform: process.platform,
+      arch: process.arch
+    }
+  });
+});
+
+// Middleware to ensure Innertube is initialized
+app.use((req, res, next) => {
+  if (req.path === '/api/debug') return next();
+  if (startupError) {
+    return res.status(500).json({
+      error: "Backend failed to initialize YouTube client.",
+      details: startupError.message
+    });
+  }
+  if (!yt) {
+    return res.status(503).json({
+      error: "Backend is still initializing YouTube client, please retry in a few seconds."
+    });
+  }
+  next();
+});
 
 // Helper to format thumbnail URLs into high-res images
 function getThumbnailUrl(item) {
