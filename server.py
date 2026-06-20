@@ -293,12 +293,13 @@ def get_artist_songs(artistId: str = Query(None), name: str = Query(...)):
 
 def extract_stream_from_cobalt(video_id: str) -> str:
     instances = [
+        "https://cobaltapi.kittycat.boo",
+        "https://api.qwkuns.me",
+        "https://api.cobalt.blackcat.sweeux.org",
         "https://nuko-c.meowing.de",
         "https://cobalt.alpha.wolfy.love",
         "https://grapefruit.clxxped.lol",
-        "https://cobaltapi.squair.xyz",
-        "https://api.qwkuns.me",
-        "https://api.cobalt.blackcat.sweeux.org"
+        "https://cobaltapi.squair.xyz"
     ]
     
     headers = {
