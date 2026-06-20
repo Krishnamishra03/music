@@ -293,6 +293,8 @@ def get_artist_songs(artistId: str = Query(None), name: str = Query(...)):
 
 def extract_stream_from_cobalt(video_id: str) -> str:
     instances = [
+        "https://fox.kittycat.boo",
+        "https://rue-cobalt.xenon.zone",
         "https://cobaltapi.kittycat.boo",
         "https://api.qwkuns.me",
         "https://api.cobalt.blackcat.sweeux.org",
