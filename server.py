@@ -291,7 +291,10 @@ def get_artist_songs(artistId: str = Query(None), name: str = Query(...)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Artist fetch failed: {str(e)}")
 
+LAST_WORKING_COBALT = None
+
 def extract_stream_from_cobalt(video_id: str) -> str:
+    global LAST_WORKING_COBALT
     import urllib.request, json, ssl
     context = ssl._create_unverified_context()
 
@@ -325,10 +328,19 @@ def extract_stream_from_cobalt(video_id: str) -> str:
     }
     body_bytes = json.dumps(body).encode()
     
-    for api_url in instances:
+    # Try the last known working instance first for speed
+    check_queue = []
+    if LAST_WORKING_COBALT and LAST_WORKING_COBALT in instances:
+        check_queue.append(LAST_WORKING_COBALT)
+        check_queue.extend([inst for inst in instances if inst != LAST_WORKING_COBALT])
+    else:
+        check_queue = instances
+
+    for api_url in check_queue:
         try:
             req = urllib.request.Request(api_url, headers=headers, data=body_bytes)
-            res = urllib.request.urlopen(req, context=context, timeout=8).read().decode()
+            # Shortened timeout to 4 seconds to prevent request piling/timeout
+            res = urllib.request.urlopen(req, context=context, timeout=4).read().decode()
             data = json.loads(res)
             stream_url = data.get("url")
             if not stream_url:
@@ -336,14 +348,13 @@ def extract_stream_from_cobalt(video_id: str) -> str:
                 continue
             
             # CRITICAL: Verify the tunnel URL actually delivers audio bytes
-            # Many Cobalt instances return a tunnel URL but serve 0 bytes
             try:
                 verify_req = urllib.request.Request(stream_url, headers={
                     "User-Agent": "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36",
                     "Accept": "*/*",
                     "Range": "bytes=0-1023"
                 })
-                verify_resp = urllib.request.urlopen(verify_req, context=context, timeout=8)
+                verify_resp = urllib.request.urlopen(verify_req, context=context, timeout=4)
                 probe_data = verify_resp.read(1024)
                 verify_resp.close()
                 
@@ -352,6 +363,7 @@ def extract_stream_from_cobalt(video_id: str) -> str:
                     continue
                 
                 print(f"Cobalt VERIFIED success: {api_url} — tunnel delivers {len(probe_data)} bytes of audio")
+                LAST_WORKING_COBALT = api_url
                 return stream_url
             except Exception as verify_err:
                 print(f"Cobalt {api_url}: tunnel verification failed: {verify_err} — SKIPPING")
