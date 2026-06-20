@@ -292,16 +292,25 @@ def get_artist_songs(artistId: str = Query(None), name: str = Query(...)):
         raise HTTPException(status_code=500, detail=f"Artist fetch failed: {str(e)}")
 
 def extract_stream_from_cobalt(video_id: str) -> str:
+    import urllib.request, json, ssl
+    context = ssl._create_unverified_context()
+
+    # Ordered by reliability — verified working instances first
     instances = [
+        "https://cobaltapi.kittycat.boo",
         "https://fox.kittycat.boo",
         "https://rue-cobalt.xenon.zone",
-        "https://cobaltapi.kittycat.boo",
-        "https://api.qwkuns.me",
-        "https://api.cobalt.blackcat.sweeux.org",
         "https://nuko-c.meowing.de",
         "https://cobalt.alpha.wolfy.love",
         "https://grapefruit.clxxped.lol",
-        "https://cobaltapi.squair.xyz"
+        "https://cobaltapi.squair.xyz",
+        "https://api.qwkuns.me",
+        "https://api.cobalt.blackcat.sweeux.org",
+        "https://melon.clxxped.lol",
+        "https://lime.clxxped.lol",
+        "https://dog.kittycat.boo",
+        "https://apicobalt.mgytr.top",
+        "https://api.cobalt.liubquanti.click",
     ]
     
     headers = {
@@ -314,21 +323,42 @@ def extract_stream_from_cobalt(video_id: str) -> str:
         "url": f"https://www.youtube.com/watch?v={video_id}",
         "downloadMode": "audio"
     }
-    
-    import urllib.request, json, ssl
-    context = ssl._create_unverified_context()
+    body_bytes = json.dumps(body).encode()
     
     for api_url in instances:
         try:
-            req = urllib.request.Request(api_url, headers=headers, data=json.dumps(body).encode())
-            res = urllib.request.urlopen(req, context=context, timeout=5).read().decode()
+            req = urllib.request.Request(api_url, headers=headers, data=body_bytes)
+            res = urllib.request.urlopen(req, context=context, timeout=8).read().decode()
             data = json.loads(res)
             stream_url = data.get("url")
-            if stream_url:
-                print(f"Cobalt success: {api_url}")
+            if not stream_url:
+                print(f"Cobalt {api_url}: no url in response")
+                continue
+            
+            # CRITICAL: Verify the tunnel URL actually delivers audio bytes
+            # Many Cobalt instances return a tunnel URL but serve 0 bytes
+            try:
+                verify_req = urllib.request.Request(stream_url, headers={
+                    "User-Agent": "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36",
+                    "Accept": "*/*",
+                    "Range": "bytes=0-1023"
+                })
+                verify_resp = urllib.request.urlopen(verify_req, context=context, timeout=8)
+                probe_data = verify_resp.read(1024)
+                verify_resp.close()
+                
+                if len(probe_data) < 16:
+                    print(f"Cobalt {api_url}: tunnel returned only {len(probe_data)} bytes — SKIPPING (empty/broken tunnel)")
+                    continue
+                
+                print(f"Cobalt VERIFIED success: {api_url} — tunnel delivers {len(probe_data)} bytes of audio")
                 return stream_url
+            except Exception as verify_err:
+                print(f"Cobalt {api_url}: tunnel verification failed: {verify_err} — SKIPPING")
+                continue
+                
         except Exception as e:
-            print(f"Cobalt failed on {api_url}: {e}")
+            print(f"Cobalt {api_url}: API call failed: {e}")
             
     return None
 
